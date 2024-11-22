@@ -2,8 +2,9 @@
 #include <math.h>
 #include "ima.h"
 
+image_t* to_display;
 image_t *image;
-image_t *copy;
+image_t *copy = NULL;
 int afficheroriginale = 1;
 
 #define ESCAPE 27
@@ -32,6 +33,7 @@ void mouse(int button, int state, int x, int y) {
 
 int init(char *s) {
   image = (image_t *) malloc(sizeof(image_t));
+  to_display = image;
 
   if (image == NULL) {
     fprintf(stderr, "Out of memory\n");
@@ -61,29 +63,14 @@ int reinit() {
 }
 
 void display() {
-  image_t *i;
-
-  printf("afficheroriginale ? %d\n", afficheroriginale);
-
-  if (afficheroriginale) {
-    i = image;
-  } else {
-    i = copy;
-  }
-
-  GLint w, h;
-
   glClear(GL_COLOR_BUFFER_BIT);
 
-  w = glutGet(GLUT_WINDOW_WIDTH);
-  h = glutGet(GLUT_WINDOW_HEIGHT);
-
   glDrawPixels(
-    i->sizeX,
-    i->sizeY,
+    to_display->sizeX,
+    to_display->sizeY,
     GL_RGB,
     GL_UNSIGNED_BYTE, 
-	  i->data
+	  to_display->data
   );
 
   glFlush();
@@ -99,25 +86,25 @@ void reshape(int w, int h) {
 }
 
 void menuFunc(int item) {
-  char s[256];
-
   switch(item){
     case 0:
       free(image);
       exit(0);
       break;
     case 1:
-      printf("Gris pondéré\n");
-      gris_pondere(image);
-      afficheroriginale = 1;
+      to_display = image;
       display();
       break;
     case 2:
+      if (copy != NULL) {
+        freeImage(copy);
+      }
       clut_t cl = creerclut(5);
       afficherclut(cl);
       copy = creercopie(image, &cl);
-      afficheroriginale = 0;
+      to_display = copy;
       display();
+      free(cl.clut);
       break;
     case 3:
       // printf("Entrer le nom pour l'image dans cette taille\n");
@@ -125,7 +112,7 @@ void menuFunc(int item) {
       // save_ppm(s, image);
       break;
     case 4:
-      printf("Taille de l image : %ld %ld\n", (int) image->sizeX, (int) image->sizeY);
+      printf("Taille de l image : %ld %ld\n", (long) image->sizeX, (long) image->sizeY);
       break;
     default:
       break;
@@ -149,7 +136,7 @@ int main(int argc, char **argv) {
 
   glutCreateMenu(menuFunc);
   glutAddMenuEntry("Quitter", 0);
-  glutAddMenuEntry("Gris pondere", 1);
+  glutAddMenuEntry("Afficher originale", 1);
   glutAddMenuEntry("Appliquer clut", 2);
   glutAddMenuEntry("Sauvegarder", 3);
   glutAddMenuEntry("Informations", 4);

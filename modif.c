@@ -55,6 +55,11 @@ void afficherclut(clut_t cl) {
   }
 }
 
+void freeImage(image_t* image) {
+  free(image->data);
+  free(image);
+}
+
 image_t* creercopie(image_t *source, clut_t *cl) {
   image_t *i;
   couleur_t c;
