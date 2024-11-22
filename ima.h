@@ -1,3 +1,6 @@
+#ifndef IMA_H_INCLUDED
+#define IMA_H_INCLUDED
+
 #include <stdio.h> 
 #include <stdlib.h>
 #include <assert.h>
@@ -39,3 +42,6 @@ clut_t creerclut(int nb);
 void afficherclut(clut_t cl);
 image_t* creercopie(image_t *source, clut_t *cl);
 couleur_t plusproche(GLubyte *r, GLubyte *g, GLubyte *b, clut_t *cl);
+void freeImage(image_t *image);
+
+#endif // IMA_H_INCLUDED
