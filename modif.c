@@ -109,20 +109,18 @@ couleur_t plusproche(GLubyte *r, GLubyte *g, GLubyte *b, clut_t *cl) {
   int i;
   double dmin, d;
 
-  // commencer avec la première couleur puis comparer aux autres
+  // commencer avec la première couleur puis comparer avec les autres
   plusproche = cl->clut[0];
-  dmin = sqrt(
-    (double)((*r - cl->clut[0].r) * (*r - cl->clut[0].r)) + 
-    (double)((*g - cl->clut[0].g) * (*g - cl->clut[0].g)) + 
-    (double)((*b - cl->clut[0].b) * (*b - cl->clut[0].b))
-  );
+  dmin =
+    ((*r - cl->clut[0].r) * (*r - cl->clut[0].r)) + 
+    ((*g - cl->clut[0].g) * (*g - cl->clut[0].g)) + 
+    ((*b - cl->clut[0].b) * (*b - cl->clut[0].b));
 
   for (i = 1; i < cl->nbe; i++) {
-    d = sqrt(
-        (double)((*r - cl->clut[i].r) * (*r - cl->clut[i].r)) + 
-        (double)((*g - cl->clut[i].g) * (*g - cl->clut[i].g)) + 
-        (double)((*b - cl->clut[i].b) * (*b - cl->clut[i].b))
-    );
+    d =
+    ((*r - cl->clut[i].r) * (*r - cl->clut[i].r)) + 
+    ((*g - cl->clut[i].g) * (*g - cl->clut[i].g)) + 
+    ((*b - cl->clut[i].b) * (*b - cl->clut[i].b));
 
     if (d < dmin) {
       dmin = d;
