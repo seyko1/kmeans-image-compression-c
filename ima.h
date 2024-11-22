@@ -11,15 +11,31 @@
 #include <GL/glut.h>
 #endif
 
-struct Image {
+typedef struct couleur {
+  GLubyte r;
+  GLubyte g;
+  GLubyte b;
+} couleur_t;
+
+typedef struct clut {
+  int nbe;
+  couleur_t *clut;
+} clut_t;
+
+typedef struct image {
     unsigned long sizeX;
     unsigned long sizeY;
     GLubyte *data;
-};
-typedef struct Image Image;
+} image_t;
+
 typedef unsigned short utab [3][3][3];
 
-int load_ppm(char *filename, Image *image);
-void save_ppm(char *filename, Image *image);
-void upsidedown(Image *);
-void gris_pondere (Image *);
+int load_ppm(char *filename, image_t *image);
+void save_ppm(char *filename, image_t *image);
+void upsidedown(image_t *);
+void gris_pondere (image_t *);
+
+clut_t creerclut(int nb);
+void afficherclut(clut_t cl);
+image_t* creercopie(image_t *source, clut_t *cl);
+couleur_t plusproche(GLubyte *r, GLubyte *g, GLubyte *b, clut_t *cl);

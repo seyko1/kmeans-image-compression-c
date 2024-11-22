@@ -2,7 +2,9 @@
 #include <math.h>
 #include "ima.h"
 
-Image *image;
+image_t *image;
+image_t *copy;
+int afficheroriginale = 1;
 
 #define ESCAPE 27
 
@@ -29,7 +31,7 @@ void mouse(int button, int state, int x, int y) {
 }
 
 int init(char *s) {
-  image = (Image *) malloc(sizeof(Image));
+  image = (image_t *) malloc(sizeof(image_t));
 
   if (image == NULL) {
     fprintf(stderr, "Out of memory\n");
@@ -58,7 +60,16 @@ int reinit() {
   return (0);
 }
 
-void display(void) {
+void display() {
+  image_t *i;
+
+  printf("afficheroriginale ? %d\n", afficheroriginale);
+
+  if (afficheroriginale) {
+    i = image;
+  } else {
+    i = copy;
+  }
 
   GLint w, h;
 
@@ -68,11 +79,11 @@ void display(void) {
   h = glutGet(GLUT_WINDOW_HEIGHT);
 
   glDrawPixels(
-    image->sizeX,
-    image->sizeY,
+    i->sizeX,
+    i->sizeY,
     GL_RGB,
     GL_UNSIGNED_BYTE, 
-	  image->data
+	  i->data
   );
 
   glFlush();
@@ -98,14 +109,22 @@ void menuFunc(int item) {
     case 1:
       printf("Gris pondéré\n");
       gris_pondere(image);
+      afficheroriginale = 1;
       display();
       break;
     case 2:
-      printf("Entrer le nom pour l'image dans cette taille\n");
-      scanf("%s", &s[0]);
-      save_ppm(s, image);
+      clut_t cl = creerclut(5);
+      afficherclut(cl);
+      copy = creercopie(image, &cl);
+      afficheroriginale = 0;
+      display();
       break;
     case 3:
+      // printf("Entrer le nom pour l'image dans cette taille\n");
+      // scanf("%s", &s[0]);
+      // save_ppm(s, image);
+      break;
+    case 4:
       printf("Taille de l image : %ld %ld\n", (int) image->sizeX, (int) image->sizeY);
       break;
     default:
@@ -131,8 +150,9 @@ int main(int argc, char **argv) {
   glutCreateMenu(menuFunc);
   glutAddMenuEntry("Quitter", 0);
   glutAddMenuEntry("Gris pondere", 1);
-  glutAddMenuEntry("Sauvegarder", 2);
-  glutAddMenuEntry("Informations", 3);
+  glutAddMenuEntry("Appliquer clut", 2);
+  glutAddMenuEntry("Sauvegarder", 3);
+  glutAddMenuEntry("Informations", 4);
   glutAttachMenu(GLUT_LEFT_BUTTON);
 
   glutDisplayFunc(display);  

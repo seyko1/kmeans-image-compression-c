@@ -4,7 +4,7 @@
 #define CREATOR "JJ"
 #define RGB_COMPONENT_COLOR 255
 
-int load_ppm(char *filename, Image *img) {
+int load_ppm(char *filename, image_t *img) {
   char d, buff[16];
   FILE *fp;
   int c, rgb_comp_color, size;
@@ -71,7 +71,7 @@ int load_ppm(char *filename, Image *img) {
   return 1;
 }
 
-void save_ppm(char *filename, Image *img) {
+void save_ppm(char *filename, image_t *img) {
   upsidedown(img);
 
   FILE *fp;
@@ -104,7 +104,7 @@ void save_ppm(char *filename, Image *img) {
   upsidedown(img);
 }
 
-void upsidedown(Image *img) {
+void upsidedown(image_t *img) {
   /* remettre l image dans le bon sens */
   int b, c, size, sizex;
   GLubyte tmp, *ptrdeb, *ptrfin, *lastline;
