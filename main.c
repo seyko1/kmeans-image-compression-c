@@ -91,7 +91,7 @@ void reshape(int w, int h) {
 
 void menuFunc(int item) {
   // char s[256];
-  char fileName[] = "image.km";
+  char fileName[] = "door.km";
   switch(item){
     case 0:
       free(image);
