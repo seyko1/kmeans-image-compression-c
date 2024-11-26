@@ -5,6 +5,7 @@
 image_t* to_display;
 image_t *image;
 image_t *copy = NULL;
+clut_t clut;
 int afficheroriginale = 1;
 
 #define ESCAPE 27
@@ -34,7 +35,7 @@ void mouse(int button, int state, int x, int y) {
 int init(char *s) {
   image = (image_t *) malloc(sizeof(image_t));
   to_display = image;
-
+  
   if (image == NULL) {
     fprintf(stderr, "Out of memory\n");
     return(-1);
@@ -49,7 +50,10 @@ int init(char *s) {
   glShadeModel(GL_FLAT);
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glutReshapeWindow(image->sizeX, image->sizeY);
-  
+
+  clut = creerclut(10);
+  afficherclut(&clut);
+
   return (0);
 }
 
@@ -86,6 +90,8 @@ void reshape(int w, int h) {
 }
 
 void menuFunc(int item) {
+  // char s[256];
+  char fileName[] = "image.km";
   switch(item){
     case 0:
       free(image);
@@ -96,22 +102,42 @@ void menuFunc(int item) {
       display();
       break;
     case 2:
-      if (copy != NULL) {
-        freeImage(copy);
-      }
-      clut_t cl = creerclut(5);
-      afficherclut(cl);
-      copy = creercopie(image, &cl);
+      if (copy != NULL) freeimage(copy);
+      
+      afficherclut(&clut);
+      
+      copy = creercopie(image, &clut);
+      
       to_display = copy;
       display();
-      free(cl.clut);
+      
+      //free(clut.clut);
       break;
     case 3:
-      // printf("Entrer le nom pour l'image dans cette taille\n");
-      // scanf("%s", &s[0]);
-      // save_ppm(s, image);
+      for (int i = 0; i < 10; i++) {
+        kmoyennes(image, &clut);
+      }
+
+      afficherclut(&clut);
+
+      if (copy != NULL) freeimage(copy);
+
+      copy = creercopie(image, &clut);
+
+      to_display = copy;
+      display();
+
       break;
     case 4:
+      // printf("Entrer le nom pour l'image compressée\n");
+      // scanf("%s", &s[0]);
+      printf("Compression de l'image %s\n", fileName);
+      compresser(fileName, image, &clut);
+      break;
+    case 5:
+      printf("Décompression de l'image %s\n", fileName);
+      decompresser(fileName, &clut);
+    case 6:
       printf("Taille de l image : %ld %ld\n", (long) image->sizeX, (long) image->sizeY);
       break;
     default:
@@ -120,7 +146,6 @@ void menuFunc(int item) {
 }
 
 int main(int argc, char **argv) {  
-
   if (argc<2) {
     fprintf(stderr, "Usage : palette nom_de_fichier\n");
     exit(0);
@@ -137,9 +162,11 @@ int main(int argc, char **argv) {
   glutCreateMenu(menuFunc);
   glutAddMenuEntry("Quitter", 0);
   glutAddMenuEntry("Afficher originale", 1);
-  glutAddMenuEntry("Appliquer clut", 2);
-  glutAddMenuEntry("Sauvegarder", 3);
-  glutAddMenuEntry("Informations", 4);
+  glutAddMenuEntry("Appliquer clut de 10", 2);
+  glutAddMenuEntry("Kmeans +10 iter", 3);
+  glutAddMenuEntry("Compresser", 4);
+  glutAddMenuEntry("Decompresser", 5);
+  glutAddMenuEntry("Informations", 6);
   glutAttachMenu(GLUT_LEFT_BUTTON);
 
   glutDisplayFunc(display);  

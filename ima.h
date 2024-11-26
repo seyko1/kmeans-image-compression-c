@@ -21,7 +21,7 @@ typedef struct couleur {
 } couleur_t;
 
 typedef struct clut {
-  int nbe;
+  GLubyte nbe;
   couleur_t *clut;
 } clut_t;
 
@@ -39,9 +39,15 @@ void upsidedown(image_t *);
 void gris_pondere (image_t *);
 
 clut_t creerclut(int nb);
-void afficherclut(clut_t cl);
+void afficherclut(clut_t *cl);
 image_t* creercopie(image_t *source, clut_t *cl);
-couleur_t plusproche(GLubyte *r, GLubyte *g, GLubyte *b, clut_t *cl);
-void freeImage(image_t *image);
+// calcul de la distance euclidienne pour trouver quel point de la clut est le plus proche
+GLubyte plusproche(GLubyte *r, GLubyte *g, GLubyte *b, clut_t *cl);
+void kmoyennes(image_t *source, clut_t *cl);
+void freeimage(image_t *image);
+void compresser(char* fileName, image_t *im, clut_t *cl);
+GLubyte couleurtaillebinaire(GLubyte b);
+// TODO: recevoir une clut vide avec une mémoire allouée pour la remplir à la lecture du fichier.
+image_t decompresser(char* fileName, clut_t *cl);
 
 #endif // IMA_H_INCLUDED
