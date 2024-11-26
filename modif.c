@@ -33,9 +33,12 @@ void gris_pondere(image_t * i) {
   }
 }
 
-clut_t creerclut(int nbe) {
+clut_t creerclut(image_t *im, int nbe) {
   clut_t cl;
-  int i;
+  int rand_pixel, imsize;
+  GLubyte i;
+
+  imsize = im->sizeX * im->sizeY;
 
   srand(time(NULL));
 
@@ -45,9 +48,11 @@ clut_t creerclut(int nbe) {
   cl.nbe = nbe;
 
   for (i = 0; i < nbe; i++) {
-    cl.clut[i].r = (float)rand() / RAND_MAX * 255;
-    cl.clut[i].g = (float)rand() / RAND_MAX * 255;
-    cl.clut[i].b = (float)rand() / RAND_MAX * 255;     
+    rand_pixel = rand() % imsize;
+
+    cl.clut[i].r = (float)(im->data[rand_pixel]    );
+    cl.clut[i].g = (float)(im->data[rand_pixel + 1]);
+    cl.clut[i].b = (float)(im->data[rand_pixel + 2]); 
   }
   return cl;
 }

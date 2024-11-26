@@ -38,7 +38,7 @@ void save_ppm(char *filename, image_t *image);
 void upsidedown(image_t *);
 void gris_pondere (image_t *);
 
-clut_t creerclut(int nb);
+clut_t creerclut(image_t *im, int nbe);
 void afficherclut(clut_t *cl);
 image_t* creercopie(image_t *source, clut_t *cl);
 // calcul de la distance euclidienne pour trouver quel point de la clut est le plus proche

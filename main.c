@@ -51,7 +51,7 @@ int init(char *s) {
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glutReshapeWindow(image->sizeX, image->sizeY);
 
-  clut = creerclut(10);
+  clut = creerclut(image, 10);
   afficherclut(&clut);
 
   return (0);
