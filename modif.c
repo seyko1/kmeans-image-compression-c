@@ -206,29 +206,33 @@ void compresser(char* fileName, image_t *im, clut_t *cl) {
   imb = im->data + 2;
 
   nbesize = couleurtaillebinaire(cl->nbe);
-  byte_acc = 0, reste = 8, tmp = 0;
+  byte_acc = 0; // accumulateur de l'octet en cours d'écriture
+  reste = 8;    // nombre de bits restants à remplir dans l'octet 
+  tmp = 0;
 
   for (i = 0; i < size; i ++) {
     couleurindex = plusproche(imr, img, imb, cl);
 
     // ecriture bit à bit
     if (reste >= nbesize) {
-      byte_acc <<= nbesize;
-      byte_acc += couleurindex;
-      reste -= nbesize;
+      byte_acc <<= nbesize; // shifter de nbesize bits pour faire de la place 
+      byte_acc += couleurindex; // ajouter les bits
+      reste -= nbesize; // décrémenter le reste à écrire
     }
+    // si il ne reste pas suffisement de bits pour écrire une couleur
     else {
       // 1. ecrire le nombre de bit correspondant au reste actuel
-      byte_acc <<= reste;
-      tmp = couleurindex >> (nbesize - reste);
+      byte_acc <<= reste; 
+      // extraire dans tmp les bits de gauche qui peuvent rentrer dans l'accumulateur
+      tmp = couleurindex >> (nbesize - reste); 
       byte_acc += tmp;
       // 2. ecrire l'octet
       fputc(byte_acc, output);
       byte_acc = 0;
       // 3. remplir byte_acc avec le reste à écrire
-      reste = 8 - (nbesize - reste);
-      byte_acc = couleurindex << reste;
-      byte_acc >>= reste;
+      reste = 8 - (nbesize - reste); // soustraire à reste le nombre de bits restant à écrire
+      byte_acc = couleurindex << reste; // commencer à remplir le nouvel octet avec les bits restants
+      byte_acc >>= reste; // ajuster pour ne garder que les bits de poids faible
     }
 
     imr += 3;
@@ -257,10 +261,11 @@ GLubyte couleurtaillebinaire(GLubyte b) {
 image_t decompresser(char* fileName, clut_t *cl) {
   FILE *input;
   image_t im;
+  GLubyte *imr, *img, *imb;
   int i, imsize, nbesize;
-  // GLubyte couleurindex, byte_acc, reste, tmp;
+  GLubyte couleurindex, byte_acc, reste, tmp;
 
-  // if (cl == NULL) return;
+  if (cl == NULL) return;
 
   // remplir la clut et retourner l'image
 
@@ -274,8 +279,6 @@ image_t decompresser(char* fileName, clut_t *cl) {
 
   imsize = im.sizeX * im.sizeY;
 
-  im.data = malloc(imsize * sizeof(GLubyte) * 3);
-
   // 2. lire le nombre de couleurs de la clut
   cl->nbe = fgetc(input);
 
@@ -286,12 +289,59 @@ image_t decompresser(char* fileName, clut_t *cl) {
     fread(&(cl->clut[i]), sizeof(GLbyte), 3, input);
   }
   
+  im.data = malloc(imsize * sizeof(GLubyte) * 3);
   // lire les indexes de l'image
   
   nbesize = couleurtaillebinaire(cl->nbe);
-  // byte_acc = 0, reste = 0, tmp = 0;
+  byte_acc = 0; // accumulateur d'un octet pour stocker les bits extraits
+  reste = 8; // nombre de bits restant à extraire de byte_acc
+  tmp = 0;
 
+  
+  imr = im.data;
+  img = im.data + 1;
+  imb = im.data + 2;
   // A faire: lecture bit à bit de l'image
+
+   for (i = 0; i < imsize; i++) {
+    // lecture bit à bit
+
+    if (reste == 0) {
+      byte_acc = fgetc(input);
+      if (byte_acc == EOF) break;
+      reste = 8;
+    }
+    
+    if (reste >= nbesize) {
+      // 1. lire un indice 
+      couleurindex = byte_acc >> (reste - nbesize); // extraire les nbesize bits les plus à gauche
+      
+      // Lire la couleur depuis son indice 
+      imr = cl->clut[couleurindex].r;
+      img = cl->clut[couleurindex].g;
+      imb = cl->clut[couleurindex].b;
+      
+      // 2. Enlever les bits déjà extraits
+      byte_acc = byte_acc - (couleurindex << (reste - nbesize)); // bytes_acc - reshift à gauche des nbe bits shiftés précedemment à droite 
+      // 3. Réduire le nombre de bits restant
+      reste = (reste - nbesize);
+    } else {
+      // si le reste à lire est inferieur à nbe, c'est que byte_acc n'a pas assez de bits, lire l'octet suivant
+      // 1. décaler les bits du byte_acc à gauche pour libérer l'espace nécessaire
+      tmp = byte_acc << (nbesize - reste);
+      
+      byte_acc = fgetc(input);
+      if (byte_acc == EOF) break;
+
+      // 2. compléter temp avec les bits restants shifté à droite pour avoir la couleur
+      couleurindex = tmp + byte_acc >> (8 - (nbesize - reste));
+
+      reste = 8 - (nbesize - reste); // mettre à jour le nombre de bits restants à lire
+
+      // réduire le nombre de bits restants dans byte_acc
+      byte_acc = byte_acc - (byte_acc >> reste << reste); // Réduit le nombre de bits restants dans byte_acc
+    }
+  }
 
   fclose(input);
   return im;
