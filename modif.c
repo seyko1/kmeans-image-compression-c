@@ -189,8 +189,8 @@ void compresser(char* fileName, image_t *im, clut_t *cl) {
   output = fopen(fileName, "wb");
 
   // 1. stocker la taille de l'image
-  fwrite(&(im->sizeX), sizeof(int), 1, output);
-  fwrite(&(im->sizeY), sizeof(int), 1, output);
+  fwrite(&(im->sizeX), sizeof(long), 1, output);
+  fwrite(&(im->sizeY), sizeof(long), 1, output);
 
   // 2. stocker le nombre de couleur
   fputc(cl->nbe, output);
@@ -274,8 +274,8 @@ image_t decompresser(char* fileName, clut_t *cl) {
   input = fopen(fileName, "rb");
 
   // 1. lire la taille de l'image
-  fread(&(im.sizeX), sizeof(int), 1, input);
-  fread(&(im.sizeY), sizeof(int), 1, input);
+  fread(&(im.sizeX), sizeof(long), 1, input);
+  fread(&(im.sizeY), sizeof(long), 1, input);
 
   imsize = im.sizeX * im.sizeY;
 
@@ -294,7 +294,7 @@ image_t decompresser(char* fileName, clut_t *cl) {
   
   nbesize = couleurtaillebinaire(cl->nbe);
   byte_acc = 0; // accumulateur d'un octet pour stocker les bits extraits
-  reste = 8; // nombre de bits restant à extraire de byte_acc
+  reste = 0; // nombre de bits restant à extraire de byte_acc
   tmp = 0;
 
   
@@ -303,7 +303,7 @@ image_t decompresser(char* fileName, clut_t *cl) {
   imb = im.data + 2;
   // A faire: lecture bit à bit de l'image
 
-   for (i = 0; i < imsize; i++) {
+  for (i = 0; i < imsize; i++) {
     // lecture bit à bit
 
     if (reste == 0) {
@@ -316,11 +316,6 @@ image_t decompresser(char* fileName, clut_t *cl) {
       // 1. lire un indice 
       couleurindex = byte_acc >> (reste - nbesize); // extraire les nbesize bits les plus à gauche
       
-      // Lire la couleur depuis son indice 
-      imr = cl->clut[couleurindex].r;
-      img = cl->clut[couleurindex].g;
-      imb = cl->clut[couleurindex].b;
-      
       // 2. Enlever les bits déjà extraits
       byte_acc = byte_acc - (couleurindex << (reste - nbesize)); // bytes_acc - reshift à gauche des nbe bits shiftés précedemment à droite 
       // 3. Réduire le nombre de bits restant
@@ -331,16 +326,24 @@ image_t decompresser(char* fileName, clut_t *cl) {
       tmp = byte_acc << (nbesize - reste);
       
       byte_acc = fgetc(input);
-      if (byte_acc == EOF) break;
 
       // 2. compléter temp avec les bits restants shifté à droite pour avoir la couleur
-      couleurindex = tmp + byte_acc >> (8 - (nbesize - reste));
+      couleurindex = tmp + (byte_acc >> (8 - (nbesize - reste)));
 
       reste = 8 - (nbesize - reste); // mettre à jour le nombre de bits restants à lire
 
       // réduire le nombre de bits restants dans byte_acc
-      byte_acc = byte_acc - (byte_acc >> reste << reste); // Réduit le nombre de bits restants dans byte_acc
+      byte_acc = byte_acc - ((byte_acc >> reste) << reste); // Réduit le nombre de bits restants dans byte_acc
     }
+
+    // Lire la couleur depuis son indice 
+    *imr = cl->clut[couleurindex].r;
+    *img = cl->clut[couleurindex].g;
+    *imb = cl->clut[couleurindex].b;
+
+    imr += 3;
+    img += 3;
+    imb += 3;
   }
 
   fclose(input);

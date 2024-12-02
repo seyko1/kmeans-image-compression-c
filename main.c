@@ -136,7 +136,12 @@ void menuFunc(int item) {
       break;
     case 5:
       printf("Décompression de l'image %s\n", fileName);
-      decompresser(fileName, &clut);
+      copy = malloc(sizeof(*copy));
+      *copy = decompresser(fileName, &clut);
+      printf("Taille de l image dé compressée : %ld %ld\n", (long) copy->sizeX, (long) copy->sizeY);
+      printf("Affichage de l'image décompressé\n");
+      to_display = copy;
+      display();
     case 6:
       printf("Taille de l image : %ld %ld\n", (long) image->sizeX, (long) image->sizeY);
       break;
