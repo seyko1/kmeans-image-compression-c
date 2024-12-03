@@ -6,33 +6,6 @@
 #include <time.h>
 #include <string.h>
 
-void gris_pondere(image_t * i) {
-  int j, size, v;
-  GLubyte *imr, *img, *imb, val;
-
-  size = i->sizeY * i->sizeX;
-
-  imr = i->data;
-  img = i->data + 1;
-  imb = i->data + 2;
-
-  for (j = 0; j < size; j ++) {
-    v = *imr + (int) *imr;
-    v += 3 * (int) *img;
-    v += *imb;
-    v /= 6;
-    val = (GLubyte) v;
-
-    *imr = val;
-    *img = val;
-    *imb = val;
-
-    imr += 3;
-    img += 3;
-    imb += 3;
-  }
-}
-
 clut_t creerclut(image_t *im, int nbe) {
   clut_t cl;
   int rand_pixel, imsize;
