@@ -167,7 +167,6 @@ int kmoyennes(image_t *im, clut_t *cl) {
   long *sommes;
   GLubyte *imr, *img, *imb;
   
-  // stocker les sommes des valeurs r, g, b de l'image + la somme totale des pixels pour une couleur
   sommes = malloc(sizeof(*sommes) * cl->nbe * 4);
   memset(sommes, 0, sizeof(*sommes) * cl->nbe * 4);
 
@@ -177,7 +176,8 @@ int kmoyennes(image_t *im, clut_t *cl) {
   img = im->data + 1;
   imb = im->data + 2;
 
-  // calculer les sommes des couleurs de l'image et le nombre de pixels correspondants pour chaque couleur de la clut
+  // calculer les sommes des couleurs de l'image faisant partie d'une partition donnée.
+  // calculer aussi la somme des pixels de cette partition.
   for (i = 0; i < size; i++) {
     couleurindex = plusproche(imr, img, imb, cl);
     sommes[4 * couleurindex] += (int)*imr;
@@ -191,9 +191,9 @@ int kmoyennes(image_t *im, clut_t *cl) {
   }
 
   distances_acc = 0;
-  // redéfinir les couleurs avec la moyenne pour chaque cluster
+  // redéfinir la nouvelle couleur en calculant la moyenne pour une partition donnée
   for (i = 0; i < cl->nbe; i++) {
-    // aucun pixel dans le point le plus proche pour cette couleur
+    // continuer si aucun pixel dans cette partition
     if (sommes[4 * i + 3] == 0) continue;
     
     ra = sommes[4 * i] / sommes[4 * i + 3];
