@@ -6,26 +6,27 @@
 #include <time.h>
 #include <string.h>
 
-clut_t creerclut(image_t *im, int nbe) {
+clut_t creerclut(image_t *im, unsigned short nbe) {
   clut_t cl;
   int rand_pixel, imsize;
-  GLubyte i;
+  unsigned short i;
 
   imsize = im->sizeX * im->sizeY;
 
   srand(time(NULL));
 
+  if (nbe > MAX_COULEURS) nbe = 256;
+
   cl.clut = malloc(nbe * sizeof(couleur_t));
 
-  if (nbe > 256) nbe = 256;
   cl.nbe = nbe;
 
-  for (i = 0; i < nbe; i++) {
+  for (i = 0; i < cl.nbe; i++) {
     rand_pixel = rand() % imsize;
 
     cl.clut[i].r = (float)(im->data[rand_pixel]    );
     cl.clut[i].g = (float)(im->data[rand_pixel + 1]);
-    cl.clut[i].b = (float)(im->data[rand_pixel + 2]); 
+    cl.clut[i].b = (float)(im->data[rand_pixel + 2]);
   }
   return cl;
 }
@@ -114,7 +115,8 @@ image_t* creercopie(image_t *source, clut_t *cl) {
 }
 
 GLubyte plusproche(GLubyte *r, GLubyte *g, GLubyte *b, clut_t *cl) {
-  GLubyte i, plusproche;
+  unsigned short i;
+  GLubyte plusproche;
   double dmin, d;
 
   // commencer avec la première couleur puis comparer avec les autres
@@ -148,8 +150,8 @@ void appliqueriterations(int nbiter, image_t *source, clut_t  *cl) {
     // somme des distances parcourues
     printf("distance parcourue : %d\n", distance);
     
-    printf("Nouvelle clut : \n");
-    afficherclut(cl);
+    // printf("Nouvelle clut : \n");
+    // afficherclut(cl);
     
     if (distance < 2) {
       printf("stop \n");
@@ -220,9 +222,10 @@ int kmoyennes(image_t *im, clut_t *cl) {
 }
 
 void compresser(char* fileName, image_t *im, clut_t *cl) {
-  int nbesize, size, i;
+  int size, i;
   GLubyte *imr, *img, *imb;
   GLubyte couleurindex, byte_acc, reste, tmp;
+  GLubyte nbesize;
 
   FILE *output;
 
@@ -236,7 +239,7 @@ void compresser(char* fileName, image_t *im, clut_t *cl) {
   fwrite(&(im->sizeY), sizeof(long), 1, output);
 
   // 2. stocker le nombre de couleur
-  fputc(cl->nbe, output);
+  fwrite(&(cl->nbe), sizeof(unsigned short), 1, output);
 
   // 3. stocker les couleurs de la clut
   for (i = 0; i < cl->nbe; i++) {
@@ -290,15 +293,15 @@ void compresser(char* fileName, image_t *im, clut_t *cl) {
   fclose(output);
 }
 
-// b = nombre de couleurs
-GLubyte couleurtaillebinaire(GLubyte b) {
+// nbe = nombre de couleurs
+GLubyte couleurtaillebinaire(unsigned short nbe) {
   GLubyte size, i;
 
   size = 1;
-  b = b -1;
-  for (i = 0; i < sizeof(b) * 8; i++) {
-    b = b / 2;
-    if (b > 0) size++;
+  nbe = nbe -1;
+  for (i = 0; i < 8; i++) {
+    nbe = nbe / 2;
+    if (nbe > 0) size++;
     else break;
   }
   return size;
@@ -309,8 +312,8 @@ image_t decompresser(char* fileName, clut_t *cl) {
   FILE *input;
   image_t im;
   GLubyte *imr, *img, *imb;
-  int i, imsize, nbesize;
-  GLubyte couleurindex, byte_acc, reste, tmp;
+  int i, imsize;
+  GLubyte nbesize, couleurindex, byte_acc, reste, tmp;
 
   // remplir la clut et retourner l'image
 
@@ -325,7 +328,7 @@ image_t decompresser(char* fileName, clut_t *cl) {
   imsize = im.sizeX * im.sizeY;
 
   // 2. lire le nombre de couleurs de la clut
-  cl->nbe = fgetc(input);
+  fread(&(cl->nbe), sizeof(unsigned short), 1, input);
 
   // 3. remplir la clut
   cl->clut = malloc(cl->nbe * sizeof(couleur_t));
@@ -342,7 +345,6 @@ image_t decompresser(char* fileName, clut_t *cl) {
   reste = 0; // nombre de bits restant à extraire de byte_acc
   tmp = 0;
 
-  
   imr = im.data;
   img = im.data + 1;
   imb = im.data + 2;

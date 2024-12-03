@@ -2,7 +2,7 @@
 #include <math.h>
 #include "ima.h"
 
-#define NB_COULEURS 10
+#define NB_COULEURS 256
 #define NB_ITER 100
 
 image_t* to_display;
@@ -176,7 +176,7 @@ void menuFunc(int item) {
       free(clut.clut);
       *copy = decompresser(fileName, &clut);
 
-      printf("Taille de l image décompressée : %ld %ld\n", (long) copy->sizeX, (long) copy->sizeY);
+      printf("Taille de l image décompressée : %ld * %ld pixels\n", (long) copy->sizeX, (long) copy->sizeY);
       printf("Affichage de l'image décompressé\n");
 
       to_display = copy;

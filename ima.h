@@ -14,6 +14,8 @@
 #include <GL/glut.h>
 #endif
 
+#define MAX_COULEURS 256
+
 typedef struct couleur {
   GLubyte r;
   GLubyte g;
@@ -21,7 +23,7 @@ typedef struct couleur {
 } couleur_t;
 
 typedef struct clut {
-  GLubyte nbe;
+  unsigned short nbe;
   couleur_t *clut;
 } clut_t;
 
@@ -37,7 +39,7 @@ int load_ppm(char *filename, image_t *image);
 void save_ppm(char *filename, image_t *image);
 void upsidedown(image_t *);
 
-clut_t creerclut(image_t *im, int nbe);
+clut_t creerclut(image_t *im, unsigned short nbe);
 void afficherclut(clut_t *cl);
 int* lineariserpixels(image_t * im);
 image_t* creercopie(image_t *source, clut_t *cl);
@@ -47,7 +49,7 @@ int kmoyennes(image_t *source, clut_t *cl);
 void appliqueriterations(int nbiter, image_t *source, clut_t  *cl);
 void freeimage(image_t *image);
 void compresser(char* fileName, image_t *im, clut_t *cl);
-GLubyte couleurtaillebinaire(GLubyte b);
+GLubyte couleurtaillebinaire(unsigned short nbe);
 // TODO: recevoir une clut vide avec une mémoire allouée pour la remplir à la lecture du fichier.
 image_t decompresser(char* fileName, clut_t *cl);
 
