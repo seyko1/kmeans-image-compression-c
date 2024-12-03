@@ -220,8 +220,12 @@ void compresser(char* fileName, image_t *im, clut_t *cl) {
   fclose(output);
 }
 
+// b = nombre de couleurs
 GLubyte couleurtaillebinaire(GLubyte b) {
   GLubyte size, i;
+
+  size = 1;
+  b = b -1;
   for (i = 0; i < sizeof(b) * 8; i++) {
     b = b / 2;
     if (b > 0) size++;
