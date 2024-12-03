@@ -1,9 +1,12 @@
 #include <unistd.h>     
 #include <math.h>
+#include <time.h>
+#include <string.h>
 #include "ima.h"
 
 #define NB_COULEURS 256
-#define NB_ITER 100
+#define KMEANS_ITER 100
+#define ITER 1000
 
 image_t* to_display;
 image_t *image;
@@ -67,7 +70,7 @@ int init(char *s) {
   glutReshapeWindow(image->sizeX, image->sizeY);
 
   clut = creerclut(image, NB_COULEURS);
-  afficherclut(&clut);
+  // afficherclut(&clut);
 
   return (0);
 }
@@ -143,12 +146,12 @@ void menuFunc(int item) {
       break;
 
     case KmeansIterations:
-      printf("Nombre d'itérations : %d\n", NB_ITER);
+      printf("Nombre d'itérations : %d\n", KMEANS_ITER);
       // for (int i = 0; i < NB_ITER; i++) {
       //   kmoyennes(image, &clut);
       // }
 
-      appliqueriterations(NB_ITER, image, &clut);
+      appliqueriterations(KMEANS_ITER, image, &clut);
 
       afficherclut(&clut);
 
@@ -197,10 +200,36 @@ void menuFunc(int item) {
   }
 }
 
+void tests() {
+  int i;
+  clock_t t0, t1, dt;
+
+  image = (image_t *) malloc(sizeof(image_t));
+  
+  for (i = 5; i <= 50; i++) {
+    t0 = clock();
+
+    clut = creerclut(image, i);
+    appliqueriterations(KMEANS_ITER, image, &clut);
+    
+    t1 = clock();
+
+    dt = t1 - t0;
+
+    printf ("%d couleurs : %d ticks", i, (int) dt);
+  }
+}
+
+
 int main(int argc, char **argv) {  
   if (argc<2) {
     fprintf(stderr, "Usage : palette nom_de_fichier\n");
     exit(0);
+  }
+
+  if (argc == 3 && strcmp(argv[2], "--tests") == 0) {
+    tests();
+    return 0;
   }
 
   glutInit(&argc, argv); 
