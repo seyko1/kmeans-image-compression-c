@@ -8,7 +8,8 @@
 
 clut_t creerclut(image_t *im, unsigned short nbe) {
   clut_t cl;
-  int rand_pixel, imsize;
+  int rand_pixel;
+  long imsize;
   unsigned short i;
 
   imsize = im->sizeX * im->sizeY;
@@ -22,7 +23,7 @@ clut_t creerclut(image_t *im, unsigned short nbe) {
   cl.nbe = nbe;
 
   for (i = 0; i < cl.nbe; i++) {
-    rand_pixel = rand() % imsize;
+    rand_pixel = (rand() % imsize) * 3;
 
     cl.clut[i].r = (float)(im->data[rand_pixel]    );
     cl.clut[i].g = (float)(im->data[rand_pixel + 1]);
