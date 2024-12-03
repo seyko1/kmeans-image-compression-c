@@ -30,6 +30,36 @@ clut_t creerclut(image_t *im, int nbe) {
   return cl;
 }
 
+int* lineariserpixels(image_t * im) {
+  GLubyte i, *ir, *ig, *ib;
+  int c;
+  unsigned long size;
+  // unsigned int resultat;
+
+  size = im->sizeX * im->sizeY;
+  int* couleurs = malloc(size * sizeof(int));
+ 
+  ir = im->data;
+  ig = im->data + 1;
+  ib = im->data + 2;
+
+  for (int x = 0; x < size; x++) {
+    c = 0;
+    for (i = 7; i >= 0; i--) {
+      c <<= 3;
+      c += (((*ir >> i) & 1) << 2) + (((*ig >> i) & 1) << 1) + ((*ib >> i) & 1);
+    }
+    
+    couleurs[x] = c;
+
+    ir += 3;
+    ig += 3;
+    ib += 3;
+  }
+
+  return couleurs;
+}
+
 void afficherclut(clut_t *cl) {
   printf("couleurs de la clut\n");
   for (int i = 0; i < cl->nbe; i++) {
@@ -108,8 +138,29 @@ GLubyte plusproche(GLubyte *r, GLubyte *g, GLubyte *b, clut_t *cl) {
   return plusproche;
 }
 
-void kmoyennes(image_t *im, clut_t *cl) {
+void appliqueriterations(int nbiter, image_t *source, clut_t  *cl) {
+  int i, distance;
+ 
+  for (i = 0; i < nbiter; i++) {
+    distance = kmoyennes(source, cl);
+
+    printf("Itération %d\n", i);
+    // somme des distances parcourues
+    printf("distance parcourue : %d\n", distance);
+    
+    printf("Nouvelle clut : \n");
+    afficherclut(cl);
+    
+    if (distance < 2) {
+      printf("stop \n");
+      return;
+    }
+  }
+}
+
+int kmoyennes(image_t *im, clut_t *cl) {
   int couleurindex, size, i;
+  int distances_acc, sqrdists, ra, ga, ba, rd, gd, bd;
   long *sommes;
   GLubyte *imr, *img, *imb;
   
@@ -136,17 +187,36 @@ void kmoyennes(image_t *im, clut_t *cl) {
     imb += 3;
   }
 
-  // redéfinir les couleurs avec la moyenne pour cette couleur
+  distances_acc = 0;
+  // redéfinir les couleurs avec la moyenne pour chaque cluster
   for (i = 0; i < cl->nbe; i++) {
     // aucun pixel dans le point le plus proche pour cette couleur
     if (sommes[4 * i + 3] == 0) continue;
+    
+    ra = sommes[4 * i] / sommes[4 * i + 3];
+    ga = sommes[4 * i + 1] / sommes[4 * i + 3];
+    ba = sommes[4 * i + 2] / sommes[4 * i + 3];
 
-    cl->clut[i].r = sommes[4 * i] / sommes[4 * i + 3];
-    cl->clut[i].g = sommes[4 * i + 1] / sommes[4 * i + 3];
-    cl->clut[i].b = sommes[4 * i + 2] / sommes[4 * i + 3];
+    rd = cl->clut[i].r;
+    gd = cl->clut[i].g;
+    bd = cl->clut[i].b;
+
+    // somme des carrés des distances parcourues dans le nuage 3D
+    sqrdists = (ra - rd) * (ra - rd) +
+    (ga - gd) * (ga - gd) +
+    (ba - bd) * (ba - bd);
+
+    distances_acc += sqrdists;
+
+    // destination de parcours du centre pour le cluster i
+    cl->clut[i].r = ra;
+    cl->clut[i].g = ga;
+    cl->clut[i].b = ba;
   }
 
   free(sommes);
+
+  return distances_acc;
 }
 
 void compresser(char* fileName, image_t *im, clut_t *cl) {
@@ -241,8 +311,6 @@ image_t decompresser(char* fileName, clut_t *cl) {
   GLubyte *imr, *img, *imb;
   int i, imsize, nbesize;
   GLubyte couleurindex, byte_acc, reste, tmp;
-
-  if (cl == NULL) return;
 
   // remplir la clut et retourner l'image
 

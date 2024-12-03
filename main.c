@@ -2,11 +2,26 @@
 #include <math.h>
 #include "ima.h"
 
+#define NB_COULEURS 10
+#define NB_ITER 100
+
 image_t* to_display;
 image_t *image;
 image_t *copy = NULL;
 clut_t clut;
 int afficheroriginale = 1;
+
+enum Menu {
+  Quitter,
+  AfficherOriginale,
+  AfficherCopie,
+  AppliquerClut,
+  KmeansIterations,
+  Compresser,
+  Decompresser,
+  Informations,
+  Reinitialiser,
+};
 
 #define ESCAPE 27
 
@@ -51,7 +66,7 @@ int init(char *s) {
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glutReshapeWindow(image->sizeX, image->sizeY);
 
-  clut = creerclut(image, 10);
+  clut = creerclut(image, NB_COULEURS);
   afficherclut(&clut);
 
   return (0);
@@ -93,30 +108,47 @@ void menuFunc(int item) {
   // char s[256];
   char fileName[] = "door.km";
   switch(item){
-    case 0:
-      free(image);
+    case Quitter:
+      freeimage(image);
+      free(clut.clut);
       exit(0);
       break;
-    case 1:
+
+    case AfficherOriginale:
       to_display = image;
       display();
       break;
-    case 2:
-      if (copy != NULL) freeimage(copy);
-      
-      afficherclut(&clut);
-      
-      copy = creercopie(image, &clut);
-      
-      to_display = copy;
-      display();
-      
-      //free(clut.clut);
-      break;
-    case 3:
-      for (int i = 0; i < 10; i++) {
-        kmoyennes(image, &clut);
+
+    case AfficherCopie:
+      if (copy == NULL) {
+        printf("La copie n'est pas initialisée.\n"); 
+        return;
       }
+      to_display = copy;
+      display();
+      break;
+
+    case AppliquerClut:
+      if (copy != NULL) freeimage(copy);
+      
+      free(clut.clut);
+      clut = creerclut(image, NB_COULEURS);
+      
+      afficherclut(&clut);
+      
+      copy = creercopie(image, &clut);
+      
+      to_display = copy;
+      display();
+      break;
+
+    case KmeansIterations:
+      printf("Nombre d'itérations : %d\n", NB_ITER);
+      // for (int i = 0; i < NB_ITER; i++) {
+      //   kmoyennes(image, &clut);
+      // }
+
+      appliqueriterations(NB_ITER, image, &clut);
 
       afficherclut(&clut);
 
@@ -128,22 +160,37 @@ void menuFunc(int item) {
       display();
 
       break;
-    case 4:
+
+    case Compresser:
       // printf("Entrer le nom pour l'image compressée\n");
       // scanf("%s", &s[0]);
       printf("Compression de l'image %s\n", fileName);
       compresser(fileName, image, &clut);
       break;
-    case 5:
+
+    case Decompresser:
       printf("Décompression de l'image %s\n", fileName);
+
       copy = malloc(sizeof(*copy));
+
+      free(clut.clut);
       *copy = decompresser(fileName, &clut);
-      printf("Taille de l image dé compressée : %ld %ld\n", (long) copy->sizeX, (long) copy->sizeY);
+
+      printf("Taille de l image décompressée : %ld %ld\n", (long) copy->sizeX, (long) copy->sizeY);
       printf("Affichage de l'image décompressé\n");
+
       to_display = copy;
       display();
-    case 6:
+      break;
+
+    case Informations:
       printf("Taille de l image : %ld %ld\n", (long) image->sizeX, (long) image->sizeY);
+      break;
+
+    case Reinitialiser:
+      freeimage(image);
+      free(clut.clut);
+      clut.clut = NULL;
       break;
     default:
       break;
@@ -165,13 +212,15 @@ int main(int argc, char **argv) {
   init(argv[1]);
 
   glutCreateMenu(menuFunc);
-  glutAddMenuEntry("Quitter", 0);
-  glutAddMenuEntry("Afficher originale", 1);
-  glutAddMenuEntry("Appliquer clut de 10", 2);
-  glutAddMenuEntry("Kmeans +10 iter", 3);
-  glutAddMenuEntry("Compresser", 4);
-  glutAddMenuEntry("Decompresser", 5);
-  glutAddMenuEntry("Informations", 6);
+  glutAddMenuEntry("Quitter", Quitter);
+  glutAddMenuEntry("Afficher originale", AfficherOriginale);
+  glutAddMenuEntry("Afficher copie", AfficherCopie);
+  glutAddMenuEntry("Appliquer clut", AppliquerClut);
+  glutAddMenuEntry("Kmeans iterations", KmeansIterations);
+  glutAddMenuEntry("Compresser", Compresser);
+  glutAddMenuEntry("Decompresser", Decompresser);
+  glutAddMenuEntry("Informations", Informations);
+  glutAddMenuEntry("Reinitialiser", Reinitialiser);
   glutAttachMenu(GLUT_LEFT_BUTTON);
 
   glutDisplayFunc(display);  

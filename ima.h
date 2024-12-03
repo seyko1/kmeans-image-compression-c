@@ -39,10 +39,12 @@ void upsidedown(image_t *);
 
 clut_t creerclut(image_t *im, int nbe);
 void afficherclut(clut_t *cl);
+int* lineariserpixels(image_t * im);
 image_t* creercopie(image_t *source, clut_t *cl);
 // calcul de la distance euclidienne pour trouver quel point de la clut est le plus proche
 GLubyte plusproche(GLubyte *r, GLubyte *g, GLubyte *b, clut_t *cl);
-void kmoyennes(image_t *source, clut_t *cl);
+int kmoyennes(image_t *source, clut_t *cl);
+void appliqueriterations(int nbiter, image_t *source, clut_t  *cl);
 void freeimage(image_t *image);
 void compresser(char* fileName, image_t *im, clut_t *cl);
 GLubyte couleurtaillebinaire(GLubyte b);
