@@ -137,7 +137,7 @@ void menuFunc(int item) {
       free(clut.clut);
       clut = creerclut(image, NB_COULEURS);
       
-      afficherclut(&clut);
+      // afficherclut(&clut);
       
       copy = creercopie(image, &clut);
       
@@ -153,7 +153,7 @@ void menuFunc(int item) {
 
       appliqueriterations(KMEANS_ITER, image, &clut);
 
-      afficherclut(&clut);
+      // afficherclut(&clut);
 
       if (copy != NULL) freeimage(copy);
 

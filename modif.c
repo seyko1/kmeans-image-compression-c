@@ -150,11 +150,8 @@ void appliqueriterations(int nbiter, image_t *source, clut_t  *cl) {
     printf("Itération %d\n", i);
     // somme des distances parcourues
     printf("distance parcourue : %d\n", distance);
-    
-    // printf("Nouvelle clut : \n");
-    // afficherclut(cl);
-    
-    if (distance < 2) {
+  
+    if ((float)distance / cl->nbe < 1) {
       printf("stop \n");
       return;
     }
