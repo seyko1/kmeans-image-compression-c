@@ -33,8 +33,6 @@ typedef struct image {
     GLubyte *data;
 } image_t;
 
-typedef unsigned short utab [3][3][3];
-
 int load_ppm(char *filename, image_t *image);
 void save_ppm(char *filename, image_t *image);
 void upsidedown(image_t *);
