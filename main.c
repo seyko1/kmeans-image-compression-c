@@ -167,8 +167,13 @@ void menuFunc(int item) {
     case Compresser:
       // printf("Entrer le nom pour l'image compressée\n");
       // scanf("%s", &s[0]);
-      printf("Compression de l'image %s\n", fileName);
+      printf("Compression de l'image.\n");
       compresser(fileName, image, &clut);
+      printf("Image compressée dans le fichier %s\n", fileName);
+      printf("Réaffichage de l'image originale %s\n", fileName);
+
+      to_display = image;
+      display();
       break;
 
     case Decompresser:
