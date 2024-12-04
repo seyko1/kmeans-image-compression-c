@@ -40,4 +40,4 @@ $(PROGNAME): $(OBJ)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $<
 
 clean:
-	@$(RM) $(PROGNAME) $(OBJ) *~ gmon.out core.* door.km
+	@$(RM) $(PROGNAME) $(OBJ) *~ gmon.out core.* image.km
