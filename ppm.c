@@ -1,10 +1,10 @@
-#include "ima.h"
+#include "ppm.h"
 
 #define INSPIREPAR "RPFELGUEIRAS"
 #define CREATOR "JJ"
 #define RGB_COMPONENT_COLOR 255
 
-int load_ppm(char *filename, image_t *img) {
+int ppm_load(char *filename, image_t *image) {
   char d, buff[16];
   FILE *fp;
   int c, rgb_comp_color, size;
@@ -37,7 +37,7 @@ int load_ppm(char *filename, image_t *img) {
   ungetc(c, fp);
 
   //read image size information
-  if (fscanf(fp, "%lu %lu", &img->sizeX, &img->sizeY) != 2) {
+  if (fscanf(fp, "%u %u", &image->width, &image->height) != 2) {
     fprintf(stderr, "Invalid image size (error loading '%s')\n", filename);
     exit(1);
   }
@@ -56,22 +56,22 @@ int load_ppm(char *filename, image_t *img) {
   }
 
   /* allocation memoire */
-  size = img->sizeX * img->sizeY * 3;
-  img->data = (GLubyte *) malloc ((size_t) size * sizeof (GLubyte));
-  assert(img->data);
+  size = image->width * image->height * 3;
+  image->data = (GLubyte *) malloc ((size_t) size * sizeof *image->data);
+  assert(image->data);
 
   //read pixel data from file
-  if (fread(img->data, (size_t) 1, (size_t) size, fp) == 0) {
+  if (fread(image->data, (size_t) 1, (size_t) size, fp) == 0) {
     fprintf(stderr, "Error loading image '%s'\n", filename);
   }
 
-  upsidedown(img);
+  upsidedown(image);
 
   fclose(fp);
   return 1;
 }
 
-void save_ppm(char *filename, image_t *img) {
+void ppm_write(char *filename, image_t *img) {
   upsidedown(img);
 
   FILE *fp;
@@ -92,13 +92,13 @@ void save_ppm(char *filename, image_t *img) {
   fprintf(fp, "# Created by %s\n",CREATOR);
 
   // image size
-  fprintf(fp, "%lu %lu\n",img->sizeX,img->sizeY);
+  fprintf(fp, "%u %u\n",img->width,img->height);
 
   // rgb component depth
   fprintf(fp, "%d\n",RGB_COMPONENT_COLOR);
 
   // pixel data
-  fwrite(img->data, (size_t) 1, (size_t) (3 * img->sizeX * img->sizeY), fp);
+  fwrite(img->data, (size_t) 1, (size_t) (3 * img->width * img->height), fp);
   fclose(fp);
 
   upsidedown(img);
@@ -109,11 +109,11 @@ void upsidedown(image_t *img) {
   int b, c, size, sizex;
   GLubyte tmp, *ptrdeb, *ptrfin, *lastline;
 
-  size = img->sizeX * img->sizeY * 3;
-  sizex = img->sizeX;
+  size = img->width * img->height * 3;
+  sizex = img->width;
   lastline = img->data + size - sizex * 3;
 
-  for (b = 0; b < img->sizeY / 2; b++) {
+  for (b = 0; b < img->height / 2; b++) {
     ptrdeb = img->data + b * sizex * 3;
     ptrfin = lastline - (b * sizex * 3);
 
@@ -125,4 +125,13 @@ void upsidedown(image_t *img) {
       ptrdeb++;
     }		
   }
+}
+
+void image_free(image_t* image) {
+  if (image->data != NULL) {
+    free(image->data);
+    image->data = NULL;
+  }
+
+  free(image);
 }

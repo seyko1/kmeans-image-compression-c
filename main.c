@@ -1,40 +1,136 @@
-#include <unistd.h>     
+#include <unistd.h>
 #include <math.h>
 #include <time.h>
 #include <string.h>
-#include "ima.h"
+#include "ppm.h"
+#include "clut.h"
 
-#define NB_COULEURS 256
-#define KMEANS_ITER 100
-#define ITER 1000
+#define NB_ITER 100
 
-image_t* to_display;
-image_t *image;
+image_t* to_display = NULL;
+image_t *image = NULL;
 image_t *copy = NULL;
-clut_t clut;
+clut_t *clut = NULL;
+int nb_couleurs = 20;
 int afficheroriginale = 1;
+char* km_filename;
 
 enum Menu {
   Quitter,
   AfficherOriginale,
   AfficherCopie,
-  AppliquerClut,
+  NouvelleClut,
   KmeansIterations,
   Compresser,
   Decompresser,
   Informations,
-  Reinitialiser,
 };
 
-#define ESCAPE 27
+#define KEY_ESCAPE 27
+#define KEY_SPACE 32
+#define KEY_PLUS 43
+#define KEY_MINUS 45
+#define KEY_P 112
+#define KEY_S 115
+#define KEY_T 116
+
+static void on_appliquer_clut();
+static void on_creer_clut();
+static void on_increase_clut_colors();
+static void on_decrease_clut_colors();
+static void on_afficher_clut();
+static void on_display_original();
+static void on_display_copy();
+static void on_switch_image();
+
+static char* get_km_name(char* fileName);
+static void cleanup();
+static void keyboard(unsigned char key, int x, int y);
+static void mouse(int button, int state, int x, int y);
+static int init(char *s);
+static void display();
+static void reshape(int w, int h);
+static void menuFunc(int item);
+
+void on_appliquer_clut() {
+  copy = clut_apply(image, clut);
+  to_display = copy;
+  display();
+}
+
+void on_creer_clut() {
+  if (copy != NULL) image_free(copy);
+  if (clut != NULL) clut_free(clut);
+
+  clut = clut_create(image, nb_couleurs);
+
+  on_appliquer_clut();
+}
+
+void on_increase_clut_colors() {
+  if (nb_couleurs >= 256) return;
+
+  nb_couleurs += 2;
+  printf("Nombre de couleurs : %d\n", nb_couleurs);
+  on_creer_clut();
+}
+
+void on_decrease_clut_colors() {
+  if (nb_couleurs < 3) return;
+
+  nb_couleurs--;
+  printf("Nombre de couleurs : %d\n", nb_couleurs);
+  on_creer_clut();
+}
+
+void on_afficher_clut() {
+  printf("Couleurs de la clut :\n");
+  clut_print(clut);
+}
+
+void on_display_original() {
+  to_display = image;
+  display();
+}
+
+void on_display_copy() {
+  to_display = copy;
+  display();
+}
+
+void on_switch_image() {
+  to_display = to_display == image ? copy : image;
+  display();
+}
 
 void keyboard(unsigned char key, int x, int y) {
+  // printf("Key pressed : %d\n", key);
   switch(key) {
-    case ESCAPE:
-      exit(0);                   
+    case KEY_ESCAPE:
+      exit(0);
+      break;
+    case KEY_SPACE:
+      on_creer_clut();
+      break;
+    case KEY_PLUS:
+      on_increase_clut_colors();
+      break;
+    case KEY_MINUS:
+      on_decrease_clut_colors();
+      break;
+    case KEY_P:
+      on_afficher_clut();
+      break;
+    case KEY_S:
+      on_switch_image();
+      break;
+    case KEY_T:
+      clut_kmeans(image, clut);
+      on_appliquer_clut();
       break;
     default:
-      fprintf(stderr, "Unused key\n");
+      // fprintf(stderr, "Unused key\n");
+      break;
   }
 }
 
@@ -45,42 +141,55 @@ void mouse(int button, int state, int x, int y) {
     case GLUT_MIDDLE_BUTTON:
       break;
     case GLUT_RIGHT_BUTTON:
-      break;    
+      break;
   }
   glutPostRedisplay();
 }
 
-int init(char *s) {
-  image = (image_t *) malloc(sizeof(image_t));
+char* get_km_name(char* fileName) {
+  char* result;
+  int len = strlen(fileName);
+
+  result = malloc((len + 3) * sizeof *result);
+  strcpy(result, fileName);
+  strcat(result, ".km");
+
+  return result;
+}
+
+int init(char *fileName) {
+  km_filename = get_km_name(fileName);
+
+  image = (image_t *) malloc(sizeof image);
   to_display = image;
-  
+
   if (image == NULL) {
     fprintf(stderr, "Out of memory\n");
     return(-1);
   }
 
-  if (load_ppm(s, image)==-1) {
+  if (ppm_load(fileName, image)==-1) {
 	  return(-1);
   }
-  printf("tailles %d %d\n",(int) image->sizeX, (int) image->sizeY);
+
+  printf("[Échap] : Quitter le programme\n");
+  printf("[Espace] : Créer une nouvelle CLUT avec le même nombre de couleurs que l'actuelle\n");
+  printf("[+] : Augmenter le nombre de couleurs de 1\n");
+  printf("[-] : Diminuer le nombre de couleurs de 1\n");
+  printf("[P] : Afficher le contenu de la CLUT\n");
+  printf("[S] : Passer de l'image originale à la copie et vice-versa\n");
+  printf("[T] : Appliquer un déplacement des moyennes\n");
+  printf("\n");
+  printf("Taille de l'image %d %d\n", image->width, image->height);
 
   glClearColor(0.0, 0.0, 0.0, 0.0);
   glShadeModel(GL_FLAT);
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-  glutReshapeWindow(image->sizeX, image->sizeY);
+  glutReshapeWindow(image->width, image->height);
 
-  clut = creerclut(image, NB_COULEURS);
-  // afficherclut(&clut);
+  clut = clut_create(image, nb_couleurs);
+  copy = clut_apply(image, clut);
 
-  return (0);
-}
-
-int reinit() {
-  glClearColor(0.0, 0.0, 0.0, 0.0);
-  glShadeModel(GL_FLAT);
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-  glutReshapeWindow(image->sizeX, image->sizeY);
-  
   return (0);
 }
 
@@ -88,10 +197,10 @@ void display() {
   glClear(GL_COLOR_BUFFER_BIT);
 
   glDrawPixels(
-    to_display->sizeX,
-    to_display->sizeY,
+    to_display->width,
+    to_display->height,
     GL_RGB,
-    GL_UNSIGNED_BYTE, 
+    GL_UNSIGNED_BYTE,
 	  to_display->data
   );
 
@@ -108,56 +217,29 @@ void reshape(int w, int h) {
 }
 
 void menuFunc(int item) {
-  // char s[256];
-  char fileName[] = "image.km";
   switch(item){
     case Quitter:
-      freeimage(image);
-      free(clut.clut);
       exit(0);
       break;
 
     case AfficherOriginale:
-      to_display = image;
-      display();
+      on_display_original();
       break;
 
     case AfficherCopie:
-      if (copy == NULL) {
-        printf("La copie n'est pas initialisée.\n"); 
-        return;
-      }
-      to_display = copy;
-      display();
+      on_display_copy();
       break;
 
-    case AppliquerClut:
-      if (copy != NULL) freeimage(copy);
-      
-      free(clut.clut);
-      clut = creerclut(image, NB_COULEURS);
-      
-      // afficherclut(&clut);
-      
-      copy = creercopie(image, &clut);
-      
-      to_display = copy;
-      display();
+    case NouvelleClut:
+      on_creer_clut();
       break;
 
     case KmeansIterations:
-      printf("Nombre d'itérations : %d\n", KMEANS_ITER);
-      // for (int i = 0; i < NB_ITER; i++) {
-      //   kmoyennes(image, &clut);
-      // }
+      clut_kmeans_times(image, clut, NB_ITER);
 
-      appliqueriterations(KMEANS_ITER, image, &clut);
+      if (copy != NULL) image_free(copy);
 
-      // afficherclut(&clut);
-
-      if (copy != NULL) freeimage(copy);
-
-      copy = creercopie(image, &clut);
+      copy = clut_apply(image, clut);
 
       to_display = copy;
       display();
@@ -167,81 +249,60 @@ void menuFunc(int item) {
     case Compresser:
       // printf("Entrer le nom pour l'image compressée\n");
       // scanf("%s", &s[0]);
-      printf("Compression de l'image.\n");
-      compresser(fileName, image, &clut);
-      printf("Image compressée dans le fichier %s\n", fileName);
-      printf("Réaffichage de l'image originale %s\n", fileName);
-
-      to_display = image;
-      display();
+      printf("Compression de l'image %s\n", km_filename);
+      clut_write(km_filename, image, clut);
       break;
 
     case Decompresser:
-      printf("Décompression de l'image %s\n", fileName);
+      printf("Décompression de l'image %s\n", km_filename);
 
-      copy = malloc(sizeof(*copy));
+      if (copy != NULL) image_free(copy);
+      if (clut != NULL) {
+        free(clut->couleurs);
+      } else {
+        clut = malloc(sizeof *clut);
+      }
 
-      free(clut.clut);
-      *copy = decompresser(fileName, &clut);
+      copy = clut_read(km_filename, clut);
+      if (copy == NULL) {
+        break;
+      }
 
-      printf("Taille de l image décompressée : %ld * %ld pixels\n", (long) copy->sizeX, (long) copy->sizeY);
-      printf("Affichage de l'image décompressé\n");
+      printf("Taille de l image décompressée : %ld %ld\n", (long) copy->width, (long) copy->height);
 
       to_display = copy;
       display();
       break;
 
     case Informations:
-      printf("Taille de l image : %ld %ld\n", (long) image->sizeX, (long) image->sizeY);
+      printf("Taille de l image : %ld %ld\n", (long) image->width, (long) image->height);
       break;
 
-    case Reinitialiser:
-      freeimage(image);
-      free(clut.clut);
-      clut.clut = NULL;
-      break;
     default:
       break;
   }
 }
 
-void tests() {
-  int i;
-  clock_t t0, t1, dt;
-
-  image = (image_t *) malloc(sizeof(image_t));
-  
-  for (i = 5; i <= 50; i++) {
-    t0 = clock();
-
-    clut = creerclut(image, i);
-    appliqueriterations(KMEANS_ITER, image, &clut);
-    
-    t1 = clock();
-
-    dt = t1 - t0;
-
-    printf ("%d couleurs : %d ticks", i, (int) dt);
-  }
+void cleanup() {
+  image_free(image);
+  clut_free(clut);
+  free(km_filename);
 }
 
-
-int main(int argc, char **argv) {  
-  if (argc<2) {
+int main(int argc, char **argv) {
+  if (argc < 2) {
     fprintf(stderr, "Usage : palette nom_de_fichier\n");
     exit(0);
   }
 
-  if (argc == 3 && strcmp(argv[2], "--tests") == 0) {
-    tests();
-    return 0;
-  }
+  atexit(cleanup);
+  srand(time(NULL));
 
-  glutInit(&argc, argv); 
+  glutInit(&argc, argv);
   glutInitDisplayMode(GLUT_RGB | GLUT_SINGLE);
-  glutInitWindowSize(400, 400);  
-  glutInitWindowPosition(100, 100);  
-  glutCreateWindow("VPUP8");  
+  glutInitWindowSize(400, 400);
+  glutInitWindowPosition(100, 100);
+  glutCreateWindow("VPUP8");
 
   init(argv[1]);
 
@@ -249,21 +310,20 @@ int main(int argc, char **argv) {
   glutAddMenuEntry("Quitter", Quitter);
   glutAddMenuEntry("Afficher originale", AfficherOriginale);
   glutAddMenuEntry("Afficher copie", AfficherCopie);
-  glutAddMenuEntry("Appliquer clut", AppliquerClut);
+  glutAddMenuEntry("Nouvelle CLUT", NouvelleClut);
   glutAddMenuEntry("Kmeans iterations", KmeansIterations);
   glutAddMenuEntry("Compresser", Compresser);
   glutAddMenuEntry("Decompresser", Decompresser);
   glutAddMenuEntry("Informations", Informations);
-  glutAddMenuEntry("Reinitialiser", Reinitialiser);
   glutAttachMenu(GLUT_LEFT_BUTTON);
 
-  glutDisplayFunc(display);  
+  glutDisplayFunc(display);
   glutReshapeFunc(reshape);
   glutKeyboardFunc(keyboard);
-  
+
   glutMouseFunc(mouse);
 
-  glutMainLoop();  
+  glutMainLoop();
 
   return 1;
 }
