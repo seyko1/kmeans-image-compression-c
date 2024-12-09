@@ -1,5 +1,3 @@
-/* il s agit de prendre une image et de la modifier */
-
 #include <stdio.h>
 #include <limits.h>
 #include <math.h>
@@ -179,6 +177,75 @@ int clut_kmeans_times(image_t *image, clut_t *clut, int nb_iterations) {
   return distance;
 }
 
+static int comparer_couleurs_lineaires(const void *a, const void *b) {
+  couleur_freq_t *couleur_a = (couleur_freq_t *)a;
+  couleur_freq_t *couleur_b = (couleur_freq_t *)b;
+
+  // tri décroissant
+  return couleur_b->freq - couleur_a->freq;
+}
+
+clut_t* clut_create_by_stats(image_t * im, int nb_couleurs) {
+  char i, j, found;
+  int c;
+  unsigned long x, y, size, freq_count;
+  couleur_t * data;
+  couleur_freq_t * couleur_freqs;
+  clut_t* clut;
+
+  clut = (clut_t*) malloc(sizeof *clut);
+  clut->size = (nb_couleurs > 256 ? 256 : nb_couleurs) - 1;
+
+  size = im->width * im->height;
+
+  couleur_freqs = malloc(size * sizeof(couleur_freq_t));
+  freq_count = 0;
+
+  data = (couleur_t *)im->data;
+
+  for (x = 0; x < size; x++, data++) {
+    // temps d'execution beaucoup trop long dans l'état..
+    if (x % 1000 == 0) printf("pixel : %d\n", x);
+    c = 0;
+    for (i = 7; i >= 0; i--) {
+      c <<= 3;
+      c += (((data->r >> i) & 1) << 2) +
+           (((data->g >> i) & 1) << 1) +
+           ((data->b >> i) & 1);
+    }
+
+    found = 0;
+    for (y = 0; y < freq_count; y++) {
+      if (couleur_freqs[y].value == c) {
+        couleur_freqs[y].freq++;
+        found = 1;
+        break;
+      }
+    }
+
+    // si la couleur n'a pas été trouvée, l'ajouter au tableau
+    if (!found) {
+      couleur_freqs[freq_count].value = c;
+      couleur_freqs[freq_count].freq = 1;
+      freq_count++;
+    }
+  }
+
+  // trier les couleurs en décroissant
+  qsort(couleur_freqs, freq_count, sizeof(couleur_freq_t), comparer_couleurs_lineaires);
+
+  // ne garder que les couleurs les plus fréquentes
+  for (j = 0; j < clut->size; j++) {
+    // TODO: ajouter la couleur 3D correspondant à la valeur 1D.  
+    // clut->couleurs[j] = couleur_freqs[j].value;
+  }
+
+  // Libération de la mémoire du tableau couleur_freqs
+  free(couleur_freqs);
+
+  return clut;
+}
+
 void clut_write(char* fileName, image_t *image, clut_t *clut) {
   FILE *output;
   couleur_t *data;
@@ -249,7 +316,7 @@ image_t* clut_read(char* fileName, clut_t *clut) {
 
   // remplir la clut et retourner l'image
 
-  // format: sizeX, sizeY, nbe, r, g b * nbe, indexes
+  // format: width, height, nbe, r, g b * nbe, indexes
 
   input = fopen(fileName, "rb");
   if (input == NULL) {

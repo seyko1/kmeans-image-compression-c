@@ -63,6 +63,7 @@ void on_creer_clut() {
   if (clut != NULL) clut_free(clut);
 
   clut = clut_create(image, nb_couleurs);
+  // clut = clut_create_by_stats(image, nb_couleurs);
 
   on_appliquer_clut();
 }
