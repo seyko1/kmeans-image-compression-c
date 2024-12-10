@@ -11,7 +11,7 @@ image_t* to_display = NULL;
 image_t *image = NULL;
 image_t *copy = NULL;
 clut_t *clut = NULL;
-int nb_couleurs = 20;
+int nb_couleurs = 10;
 int afficheroriginale = 1;
 char* km_filename;
 
@@ -71,7 +71,7 @@ void on_creer_clut() {
 void on_increase_clut_colors() {
   if (nb_couleurs >= 256) return;
 
-  nb_couleurs += 2;
+  nb_couleurs ++;
   printf("Nombre de couleurs : %d\n", nb_couleurs);
   on_creer_clut();
 }

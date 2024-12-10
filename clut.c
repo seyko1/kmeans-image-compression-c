@@ -271,7 +271,7 @@ void clut_write(char* fileName, image_t *image, clut_t *clut) {
   data = (couleur_t*) image->data;
 
   image_size = image->width * image->height;
-  bits_par_pixel = compter_bits_necessaires(clut->size);
+  bits_par_pixel = compter_bits_necessaires((clut->size) + 1);
   buffer = 0; // accumulateur de l'octet en cours d'écriture
   reste = 8;    // nombre de bits restants à remplir dans l'octet
   for (i = 0; i < image_size; i++, data++) {
@@ -343,7 +343,7 @@ image_t* clut_read(char* fileName, clut_t *clut) {
   image->data = malloc(image_size * 3 * sizeof *image->data);
   // lire les indexes de l'image
 
-  bits_par_pixel = compter_bits_necessaires(clut->size);
+  bits_par_pixel = compter_bits_necessaires((clut->size) + 1);
   buffer = 0; // accumulateur d'un octet pour stocker les bits extraits
   reste = 0; // nombre de bits restant à extraire de buffer
 
